@@ -1,0 +1,191 @@
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return (
+      <div>
+        <Clock />
+        <Author />
+      </div>
+    );
+  }
+}
+
+class Clock extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { session: 25, break: 5, leftSeconds: 60 * 25, isSession: 'Session', isStart: 'fa fa-play' };
+    this.timer = 0;
+    
+    this.start_stop = this.start_stop.bind(this);
+    this.startTimer = this.startTimer.bind(this);
+    this.countDown = this.countDown.bind(this);
+    this.reset = this.reset.bind(this);
+    this.step = this.step.bind(this);
+    this.toMMSS = this.toMMSS.bind(this);
+  }
+  
+  start_stop() {
+    if(this.state.isStart == 'fa fa-play') {
+      this.setState({ isStart: 'fa fa-pause' });
+      this.startTimer();
+    } else {
+      clearInterval(this.timer);
+      this.timer = 0;
+      this.audioBeep.pause();
+      this.setState({ isStart: 'fa fa-play' });
+    }
+  }
+  
+  startTimer() {
+    if (this.timer == 0) {
+      this.timer = setInterval(this.countDown, 1000);
+    }
+  }
+  
+  countDown() {
+    
+    let leftSeconds = this.state.leftSeconds;
+    
+    if (leftSeconds == 0) { 
+      if (this.state.isSession == 'Session') {
+        this.setState({ leftSeconds: 60 * this.state.break + 1, isSession: 'Break' });
+      } else {
+        this.setState({ leftSeconds: 60 * this.state.session + 1, isSession: 'Session' });
+      }
+    }
+    
+    leftSeconds = this.state.leftSeconds - 1;
+    this.setState({ leftSeconds: leftSeconds });
+    
+    if (leftSeconds == 0) { 
+      this.audioBeep.play();
+    }
+  }
+  
+  reset() {
+    clearInterval(this.timer);
+    this.timer = 0;
+    this.audioBeep.pause();
+    this.audioBeep.currentTime = 0;
+    this.setState({ session: 25, break: 5, leftSeconds: 60 * 25, isSession: 'Session', isStart: 'fa fa-play' });
+  }
+  
+  step(e) {
+    if(this.state.isStart == 'fa fa-play') {
+    
+    if (e.target.getAttribute('value') == 'session') {
+      if (e.target.getAttribute('step') == '-1') {
+        
+        if (1 < this.state.session){
+          this.setState({ session: eval(this.state.session + e.target.getAttribute('step')) });
+          
+          if(this.state.isSession == 'Session') {
+             this.setState({ leftSeconds: 60 * eval(this.state.session + e.target.getAttribute('step')) });
+          }
+          
+        }
+      } else {
+        
+        if (this.state.session < 60) {
+          this.setState({ session: eval(this.state.session + e.target.getAttribute('step')) });
+          
+          if(this.state.isSession == 'Session') {
+             this.setState({ leftSeconds: 60 * eval(this.state.session + e.target.getAttribute('step')) });
+          }
+          
+        }
+        
+      }
+    } else {
+      if (e.target.getAttribute('step') == '-1') {
+        
+        if (1 < this.state.break) {
+          this.setState({ break: eval(this.state.break + e.target.getAttribute('step')) });
+          
+          if(this.state.isSession == 'Break') {
+             this.setState({ leftSeconds: 60 * eval(this.state.break + e.target.getAttribute('step')) });
+          }
+        }
+      
+      } else {
+        
+        if (this.state.break < 60) {
+          this.setState({ break: eval(this.state.break + e.target.getAttribute('step')) });
+          
+          if(this.state.isSession == 'Break') {
+             this.setState({ leftSeconds: 60 * eval(this.state.break + e.target.getAttribute('step')) });
+          }
+        }
+        
+      }
+    }
+      
+    }
+  }
+  
+  toMMSS = (sec) => {
+    //var sec_num = parseInt(sec, 10); // don't forget the second param
+    let sec_num = sec;
+    
+    let minutes = Math.floor(sec_num / 60);
+    let seconds = sec_num - minutes * 60;
+
+    if (minutes < 10) {minutes = "0"+minutes;}
+    if (seconds < 10) {seconds = "0"+seconds;}
+    return minutes+':'+seconds;
+  }
+  
+  render() {
+    return (
+      <div className="grid-container">
+        <div className="title">Pomodoro Clock</div>
+        <div className="session-label" id="session-label">Session Length</div>
+        <div className="break-label" id="break-label">Break Length</div>  
+        <div className="session-up-down">
+          <i className="fa fa-arrow-down" aria-hidden="true" id="session-decrement" value="session" step="-1" onClick={this.step}></i>
+          <div className="number" id="session-length">{this.state.session}</div>
+          <i className="fa fa-arrow-up" aria-hidden="true" id="session-increment" value="session" step="+1" onClick={this.step}></i>
+        </div>
+        <div className="break-up-down">
+          <i className="fa fa-arrow-down" aria-hidden="true" id="break-decrement" value="break" step="-1" onClick={this.step}></i>
+          <div className="number" id="break-length">{this.state.break}</div>
+          <i className="fa fa-arrow-up" aria-hidden="true" id="break-increment" value="break" step="+1" onClick={this.step}></i>
+        </div>
+        <div className={this.state.leftSeconds > 60 ? 'timer' : 'timer timerColor'}>
+          <div id="timer-label">{this.state.isSession}</div>
+          <div id="time-left">{this.toMMSS(this.state.leftSeconds)}</div>
+        </div>
+        <div className="control">
+          <i className={this.state.isStart} aria-hidden="true" id="start_stop" onClick={this.start_stop}></i>
+          <i className="fa fa-refresh" aria-hidden="true" id="reset" onClick={this.reset}></i>
+        </div>
+        <audio id="beep" preload="auto" 
+          src="https://goo.gl/65cBl1" ref={(audio) => { this.audioBeep = audio; }} />
+      </div>
+    );
+  }
+}
+
+class Author extends React.Component {
+  render() {
+    return (
+      <div className="author">
+        Designed and Coded By<br />
+        <a target="_blank" href="https://codepen.io/dashzeveg">Dashzeveg</a>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<App />, document.getElementById('app'));
+
+/*
+$(document).ready(function(){
+  $('#app').click(function() {
+    $(this).css('color', 'red');
+  });
+});
+*/
